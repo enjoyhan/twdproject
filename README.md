@@ -144,6 +144,11 @@ Tword-Direct shop 커버하기
 ![image](https://user-images.githubusercontent.com/33124483/124414702-2e7d7300-dd8e-11eb-99d0-11183db9ba52.png)
 
 
+## Saga 패턴
+- 각 서비스의 트랜잭션은 단일 서비스 내의 데이터를 갱신하는 일종의 로컬 트랜잭션 방법이고 서비스의 트랜잭션이 완료 후에 다음 서비스가 트리거 되어, 트랜잭션을 실행하는 패턴임
+- 아래 그림과 같이 Saga패턴에 맞춘 트랜잭션 처리(빨간색), 취소 시 자동으로 Roll-Back처리(파란색)가 되도록 연쇄적인 트리거 처리를 함
+
+
 ## CQRS
 
 - 핸드폰 주문, 주문취소, 배송 등의 Status 에 대하여 고객(Customer)이 조회 할 수 있도록 CQRS 로 구현하였다.
@@ -711,42 +716,24 @@ siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/order
 ### 오토스케일 아웃
 앞서 CB 는 시스템을 안정되게 운영할 수 있게 해줬지만 사용자의 요청을 100% 받아들여주지 못했기 때문에 이에 대한 보완책으로 자동화된 확장 기능을 적용하고자 한다. 
 
-- room deployment.yml 파일에 resources 설정을 추가한다
-![Autoscale (HPA)](https://user-images.githubusercontent.com/38099203/119283787-0a038680-bc79-11eb-8d9b-d8aed8847fef.PNG)
+- order deployment.yml 파일에 resources 설정을 추가한다
+![image](https://user-images.githubusercontent.com/33124483/124914229-1413f580-e02b-11eb-8c4f-8b044e092a66.png)
 
-- room 서비스에 대한 replica 를 동적으로 늘려주도록 HPA 를 설정한다. 설정은 CPU 사용량이 50프로를 넘어서면 replica 를 10개까지 늘려준다:
+- 명령어로 HPA 설정
 ```
-kubectl autoscale deployment room -n airbnb --cpu-percent=50 --min=1 --max=10
+# CPU 사용량이 20%를 넘으면 replica를 5개까지 늘림
+kubectl autoscale deployment order --cpu-percent=20 --min=1 --max=5
 ```
-![Autoscale (HPA)(kubectl autoscale 명령어)](https://user-images.githubusercontent.com/38099203/119299474-ec92e480-bc99-11eb-9bc3-8c5246b02783.PNG)
+![image](https://user-images.githubusercontent.com/33124483/124917413-c5685a80-e02e-11eb-9fe1-7d8ba2573869.png)
 
-- 부하를 동시사용자 100명, 1분 동안 걸어준다.
-```
-siege -c100 -t60S -v --content-type "application/json" 'http://room:8080/rooms POST {"desc": "Beautiful House3"}'
+- 부하를 동시사용자 200명, 50초 동안 걸어준다.
+```siege -c200 -t50S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1","shopId":"1","eqpNm":"Iphone13","eqpStatus":"Order","eqpSernum":"1"}'
 ```
 - 오토스케일이 어떻게 되고 있는지 모니터링을 걸어둔다
 ```
-kubectl get deploy room -w -n airbnb 
+kubectl get deploy order -w
 ```
-- 어느정도 시간이 흐른 후 (약 30초) 스케일 아웃이 벌어지는 것을 확인할 수 있다:
-![Autoscale (HPA)(모니터링)](https://user-images.githubusercontent.com/38099203/119299704-6a56f000-bc9a-11eb-9ba8-55e5978f3739.PNG)
 
-- siege 의 로그를 보아도 전체적인 성공률이 높아진 것을 확인 할 수 있다. 
-```
-Lifting the server siege...
-Transactions:                  15615 hits
-Availability:                 100.00 %
-Elapsed time:                  59.44 secs
-Data transferred:               3.90 MB
-Response time:                  0.32 secs
-Transaction rate:             262.70 trans/sec
-Throughput:                     0.07 MB/sec
-Concurrency:                   85.04
-Successful transactions:       15675
-Failed transactions:               0
-Longest transaction:            2.55
-Shortest transaction:           0.01
-```
 
 ## 무정지 재배포
 
