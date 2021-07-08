@@ -594,36 +594,7 @@ public class PolicyHandler{
 ![image](https://user-images.githubusercontent.com/33124483/124458597-24786600-ddc8-11eb-8022-6e81b9567bbe.png)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # 운영
-
 
 ## CI/CD 설정
 
@@ -668,9 +639,6 @@ codebuild 프로젝트 및 빌드 이력
 
 ![image](https://user-images.githubusercontent.com/33124483/124714171-67f3e100-df3c-11eb-8e16-841b76fb3484.png)
 ![image](https://user-images.githubusercontent.com/33124483/124719526-34b45080-df42-11eb-9a0d-27203db1c721.png)
-
-
-
 
 ## 서킷 브레이킹
 - Spring Spring FeignClient + Hystrix 옵션을 사용하여 테스팅 진행 주문(order) → 배송(delivery) 시 연결을 REST API로 Response/Request로 구현되거 있으며, 과도한 주문으로 배송에 문제가 될 때 서킷브레이커로 장애격리
@@ -723,10 +691,10 @@ siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/order
 
 - 명령어로 HPA 설정
 ```
-# CPU 사용량이 20%를 넘으면 replica를 5개까지 늘림
-kubectl autoscale deployment order --cpu-percent=20 --min=1 --max=5
+# CPU 사용량이 20%를 넘으면 replica를 3개까지 늘림
+kubectl autoscale deployment order --cpu-percent=20 --min=1 --max=3
 ```
-![image](https://user-images.githubusercontent.com/33124483/124917413-c5685a80-e02e-11eb-9fe1-7d8ba2573869.png)
+![image](https://user-images.githubusercontent.com/33124483/124946889-58fb5480-e04a-11eb-81df-a33f1c19f326.png)
 
 - 부하를 동시사용자 200명, 50초 동안 걸어준다.
 ```siege -c200 -t50S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1","shopId":"1","eqpNm":"Iphone13","eqpStatus":"Order","eqpSernum":"1"}'
@@ -736,22 +704,30 @@ kubectl autoscale deployment order --cpu-percent=20 --min=1 --max=5
 kubectl get deploy order -w
 ```
 
+![image](https://user-images.githubusercontent.com/33124483/124946667-2cdfd380-e04a-11eb-8589-e1c6d59686b0.png)
+![image](https://user-images.githubusercontent.com/33124483/124946514-0de14180-e04a-11eb-93bd-379d2c27fdde.png)
+
+
 
 ## 무정지 재배포
 
 1. Readiness를 주석처리하여 사전 테스트
+
 ![image](https://user-images.githubusercontent.com/33124483/124939008-bf30a900-e043-11eb-8bb6-ad583bdde61e.png)
 
 2. siege로 접속하여 부하를 넣고, 신규버전으로 update 진행 시 서비스 중단 확인
+
 ```
 kubectl set image deploy order order=879772956301.dkr.ecr.eu-central-1.amazonaws.com/final-order:v6
 ```
 ![image](https://user-images.githubusercontent.com/33124483/124939334-fa32dc80-e043-11eb-8f80-2195abe55817.png)
 
 3. Readiness를 주석해제
+
 ![image](https://user-images.githubusercontent.com/33124483/124939628-3b2af100-e044-11eb-9e9d-4eb3a826a8c7.png)
 
 4. siege로 접속하여 부하를 넣고, 신규버전으로 update 진행 시 서비스 무중단 확인
+
 ```
 kubectl set image deploy order order=879772956301.dkr.ecr.eu-central-1.amazonaws.com/final-order:v6
 ```
@@ -759,7 +735,25 @@ kubectl set image deploy order order=879772956301.dkr.ecr.eu-central-1.amazonaws
 ![image](https://user-images.githubusercontent.com/33124483/124942260-6ca4bc00-e046-11eb-933b-dd37d3ea191c.png)
 
 
-# Self-healing (Liveness Probe)
+# Config Map/ Persistence Volume
+- Database 연결 및 Secret 설정은 재고인 cellphone 서비스에 설정함
+[shop > src > main > resource > application.yml]
+![image](https://user-images.githubusercontent.com/33124483/124943877-d4a7d200-e047-11eb-979e-c65f1ddac25a.png)
+
+- Password는 Secret에서 비밀번호를 가져오도록 적용
+[shop > kubernetes > deployment.yml]
+![image](https://user-images.githubusercontent.com/33124483/124944365-36683c00-e048-11eb-864e-ebe9021c344e.png)
+
+- secret객체를 설정하기 위한 yaml파일을 만들어서 설정
+- 아래 이미지에서 보이듯이 admin을 BASE64 형으로 인코딩한 값으로 생성함
+```
+kubectl create -f sql-secret.yaml
+# secret 생성 확인
+kubectl get secrets
+```
+
+
+## Self-healing (Liveness Probe)
 - room deployment.yml 파일 수정 
 ```
 콘테이너 실행 후 /tmp/healthy 파일을 만들고 
@@ -776,271 +770,3 @@ pod 정상 상태 일때 pod 진입하여 /tmp/healthy 파일 생성해주면 �
 
 ![get pod tmp healthy](https://user-images.githubusercontent.com/38099203/119318781-a9923a80-bcb4-11eb-9783-65051ec0d6e8.PNG)
 ![touch tmp healthy](https://user-images.githubusercontent.com/38099203/119319050-f118c680-bcb4-11eb-8bca-aa135c1e067e.PNG)
-
-# Config Map/ Persistence Volume
-- Persistence Volume
-
-1: EFS 생성
-```
-EFS 생성 시 클러스터의 VPC를 선택해야함
-```
-![클러스터의 VPC를 선택해야함](https://user-images.githubusercontent.com/38099203/119364089-85048580-bce9-11eb-8001-1c20a93b8e36.PNG)
-
-![EFS생성](https://user-images.githubusercontent.com/38099203/119343415-60041880-bcd1-11eb-9c25-1695c858f6aa.PNG)
-
-2. EFS 계정 생성 및 ROLE 바인딩
-```
-kubectl apply -f efs-sa.yml
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: efs-provisioner
-  namespace: airbnb
-
-
-kubectl get ServiceAccount efs-provisioner -n airbnb
-NAME              SECRETS   AGE
-efs-provisioner   1         9m1s  
-  
-  
-  
-kubectl apply -f efs-rbac.yaml
-
-namespace를 반듯이 수정해야함
-
-  
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: efs-provisioner-runner
-  namespace: airbnb
-rules:
-  - apiGroups: [""]
-    resources: ["persistentvolumes"]
-    verbs: ["get", "list", "watch", "create", "delete"]
-  - apiGroups: [""]
-    resources: ["persistentvolumeclaims"]
-    verbs: ["get", "list", "watch", "update"]
-  - apiGroups: ["storage.k8s.io"]
-    resources: ["storageclasses"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["events"]
-    verbs: ["create", "update", "patch"]
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: run-efs-provisioner
-  namespace: airbnb
-subjects:
-  - kind: ServiceAccount
-    name: efs-provisioner
-     # replace with namespace where provisioner is deployed
-    namespace: airbnb
-roleRef:
-  kind: ClusterRole
-  name: efs-provisioner-runner
-  apiGroup: rbac.authorization.k8s.io
----
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: leader-locking-efs-provisioner
-  namespace: airbnb
-rules:
-  - apiGroups: [""]
-    resources: ["endpoints"]
-    verbs: ["get", "list", "watch", "create", "update", "patch"]
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: leader-locking-efs-provisioner
-  namespace: airbnb
-subjects:
-  - kind: ServiceAccount
-    name: efs-provisioner
-    # replace with namespace where provisioner is deployed
-    namespace: airbnb
-roleRef:
-  kind: Role
-  name: leader-locking-efs-provisioner
-  apiGroup: rbac.authorization.k8s.io
-
-
-```
-
-3. EFS Provisioner 배포
-```
-kubectl apply -f efs-provisioner-deploy.yml
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: efs-provisioner
-  namespace: airbnb
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: efs-provisioner
-  template:
-    metadata:
-      labels:
-        app: efs-provisioner
-    spec:
-      serviceAccount: efs-provisioner
-      containers:
-        - name: efs-provisioner
-          image: quay.io/external_storage/efs-provisioner:latest
-          env:
-            - name: FILE_SYSTEM_ID
-              value: fs-562f9c36
-            - name: AWS_REGION
-              value: ap-northeast-2
-            - name: PROVISIONER_NAME
-              value: my-aws.com/aws-efs
-          volumeMounts:
-            - name: pv-volume
-              mountPath: /persistentvolumes
-      volumes:
-        - name: pv-volume
-          nfs:
-            server: fs-562f9c36.efs.ap-northeast-2.amazonaws.com
-            path: /
-
-
-kubectl get Deployment efs-provisioner -n airbnb
-NAME              READY   UP-TO-DATE   AVAILABLE   AGE
-efs-provisioner   1/1     1            1           11m
-
-```
-
-4. 설치한 Provisioner를 storageclass에 등록
-```
-kubectl apply -f efs-storageclass.yml
-
-
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: aws-efs
-  namespace: airbnb
-provisioner: my-aws.com/aws-efs
-
-
-kubectl get sc aws-efs -n airbnb
-NAME            PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
-aws-efs         my-aws.com/aws-efs      Delete          Immediate              false                  4s
-```
-
-5. PVC(PersistentVolumeClaim) 생성
-```
-kubectl apply -f volume-pvc.yml
-
-
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: aws-efs
-  namespace: airbnb
-  labels:
-    app: test-pvc
-spec:
-  accessModes:
-  - ReadWriteMany
-  resources:
-    requests:
-      storage: 6Ki
-  storageClassName: aws-efs
-  
-  
-kubectl get pvc aws-efs -n airbnb
-NAME      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-aws-efs   Bound    pvc-43f6fe12-b9f3-400c-ba20-b357c1639f00   6Ki        RWX            aws-efs        4m44s
-```
-
-6. room pod 적용
-```
-kubectl apply -f deployment.yml
-```
-![pod with pvc](https://user-images.githubusercontent.com/38099203/119349966-bd9c6300-bcd9-11eb-9f6d-08e4a3ec82f0.PNG)
-
-
-7. A pod에서 마운트된 경로에 파일을 생성하고 B pod에서 파일을 확인함
-```
-NAME                              READY   STATUS    RESTARTS   AGE
-efs-provisioner-f4f7b5d64-lt7rz   1/1     Running   0          14m
-room-5df66d6674-n6b7n             1/1     Running   0          109s
-room-5df66d6674-pl25l             1/1     Running   0          109s
-siege                             1/1     Running   0          2d1h
-
-
-kubectl exec -it pod/room-5df66d6674-n6b7n room -n airbnb -- /bin/sh
-/ # cd /mnt/aws
-/mnt/aws # touch intensive_course_work
-```
-![a pod에서 파일생성](https://user-images.githubusercontent.com/38099203/119372712-9736f180-bcf2-11eb-8e57-1d6e3f4273a5.PNG)
-
-```
-kubectl exec -it pod/room-5df66d6674-pl25l room -n airbnb -- /bin/sh
-/ # cd /mnt/aws
-/mnt/aws # ls -al
-total 8
-drwxrws--x    2 root     2000          6144 May 24 15:44 .
-drwxr-xr-x    1 root     root            17 May 24 15:42 ..
--rw-r--r--    1 root     2000             0 May 24 15:44 intensive_course_work
-```
-![b pod에서 파일생성 확인](https://user-images.githubusercontent.com/38099203/119373196-204e2880-bcf3-11eb-88f0-a1e91a89088a.PNG)
-
-
-- Config Map
-
-1: cofingmap.yml 파일 생성
-```
-kubectl apply -f cofingmap.yml
-
-
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: airbnb-config
-  namespace: airbnb
-data:
-  # 단일 key-value
-  max_reservation_per_person: "10"
-  ui_properties_file_name: "user-interface.properties"
-```
-
-2. deployment.yml에 적용하기
-
-```
-kubectl apply -f deployment.yml
-
-
-.......
-          env:
-			# cofingmap에 있는 단일 key-value
-            - name: MAX_RESERVATION_PER_PERSION
-              valueFrom:
-                configMapKeyRef:
-                  name: airbnb-config
-                  key: max_reservation_per_person
-           - name: UI_PROPERTIES_FILE_NAME
-              valueFrom:
-                configMapKeyRef:
-                  name: airbnb-config
-                  key: ui_properties_file_name
-          volumeMounts:
-          - mountPath: "/mnt/aws"
-            name: volume
-      volumes:
-        - name: volume
-          persistentVolumeClaim:
-            claimName: aws-efs
-```
-
