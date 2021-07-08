@@ -718,6 +718,7 @@ siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/order
 앞서 CB 는 시스템을 안정되게 운영할 수 있게 해줬지만 사용자의 요청을 100% 받아들여주지 못했기 때문에 이에 대한 보완책으로 자동화된 확장 기능을 적용하고자 한다. 
 
 - order deployment.yml 파일에 resources 설정을 추가한다
+- 
 ![image](https://user-images.githubusercontent.com/33124483/124914229-1413f580-e02b-11eb-8c4f-8b044e092a66.png)
 
 - 명령어로 HPA 설정
@@ -738,88 +739,24 @@ kubectl get deploy order -w
 
 ## 무정지 재배포
 
-* 먼저 무정지 재배포가 100% 되는 것인지 확인하기 위해서 Autoscaler 이나 CB 설정을 제거함
+1. Readiness를 주석처리하여 사전 테스트
+![image](https://user-images.githubusercontent.com/33124483/124939008-bf30a900-e043-11eb-8bb6-ad583bdde61e.png)
 
+2. siege로 접속하여 부하를 넣고, 신규버전으로 update 진행 시 서비스 중단 확인
 ```
-kubectl delete destinationrules dr-room -n airbnb
-kubectl label namespace airbnb istio-injection-
-kubectl delete hpa room -n airbnb
+kubectl set image deploy order order=879772956301.dkr.ecr.eu-central-1.amazonaws.com/final-order:v6
 ```
+![image](https://user-images.githubusercontent.com/33124483/124939334-fa32dc80-e043-11eb-8f80-2195abe55817.png)
 
-- seige 로 배포작업 직전에 워크로드를 모니터링 함.
+3. Readiness를 주석해제
+![image](https://user-images.githubusercontent.com/33124483/124939628-3b2af100-e044-11eb-9e9d-4eb3a826a8c7.png)
+
+4. siege로 접속하여 부하를 넣고, 신규버전으로 update 진행 시 서비스 무중단 확인
 ```
-siege -c100 -t60S -r10 -v --content-type "application/json" 'http://room:8080/rooms POST {"desc": "Beautiful House3"}'
-
-** SIEGE 4.0.4
-** Preparing 1 concurrent users for battle.
-The server is now under siege...
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.03 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.00 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-
+kubectl set image deploy order order=879772956301.dkr.ecr.eu-central-1.amazonaws.com/final-order:v6
 ```
-
-- 새버전으로의 배포 시작
-```
-kubectl set image ...
-```
-
-- seige 의 화면으로 넘어가서 Availability 가 100% 미만으로 떨어졌는지 확인
-
-```
-siege -c100 -t60S -r10 -v --content-type "application/json" 'http://room:8080/rooms POST {"desc": "Beautiful House3"}'
-
-
-Transactions:                   7732 hits
-Availability:                  87.32 %
-Elapsed time:                  17.12 secs
-Data transferred:               1.93 MB
-Response time:                  0.18 secs
-Transaction rate:             451.64 trans/sec
-Throughput:                     0.11 MB/sec
-Concurrency:                   81.21
-Successful transactions:        7732
-Failed transactions:            1123
-Longest transaction:            0.94
-Shortest transaction:           0.00
-
-```
-- 배포기간중 Availability 가 평소 100%에서 87% 대로 떨어지는 것을 확인. 원인은 쿠버네티스가 성급하게 새로 올려진 서비스를 READY 상태로 인식하여 서비스 유입을 진행한 것이기 때문. 이를 막기위해 Readiness Probe 를 설정함
-
-```
-# deployment.yaml 의 readiness probe 의 설정:
-```
-
-![probe설정](https://user-images.githubusercontent.com/38099203/119301424-71333200-bc9d-11eb-9f75-f8c98fce70a3.PNG)
-
-```
-kubectl apply -f kubernetes/deployment.yml
-```
-
-- 동일한 시나리오로 재배포 한 후 Availability 확인:
-```
-Lifting the server siege...
-Transactions:                  27657 hits
-Availability:                 100.00 %
-Elapsed time:                  59.41 secs
-Data transferred:               6.91 MB
-Response time:                  0.21 secs
-Transaction rate:             465.53 trans/sec
-Throughput:                     0.12 MB/sec
-Concurrency:                   99.60
-Successful transactions:       27657
-Failed transactions:               0
-Longest transaction:            1.20
-Shortest transaction:           0.00
-
-```
-
-배포기간 동안 Availability 가 변화없기 때문에 무정지 재배포가 성공한 것으로 확인됨.
+![image](https://user-images.githubusercontent.com/33124483/124939940-7fb68c80-e044-11eb-9625-52726894bf91.png)
+![image](https://user-images.githubusercontent.com/33124483/124942260-6ca4bc00-e046-11eb-933b-dd37d3ea191c.png)
 
 
 # Self-healing (Liveness Probe)
