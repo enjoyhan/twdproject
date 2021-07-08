@@ -771,7 +771,13 @@ kubectl get secrets
 
 - Pod가 오류로 종료되어버리면 데이터의 유실이 발생함. 이를 해결하기 위해 PersistenceVolume으로 된 파일시스템에 연결함
 - sql-secret.yaml 수정
+- 코드 내 aws-ebs라는 PVC가 존재하지 않아서 Pod의 상태를 보면 Pending 상태로 대기중임
 
+![image](https://user-images.githubusercontent.com/33124483/124971591-5a397b00-e064-11eb-92fc-45f2c874305c.png)
+
+- 이를 해결하기 위해서 yaml 파일을 만들어서 PVC 생성함 이후 mysql Pod의 상태가 변함을 확인
+![image](https://user-images.githubusercontent.com/33124483/124971811-9f5dad00-e064-11eb-8f15-3411f26904d8.png)
+![image](https://user-images.githubusercontent.com/33124483/124971947-c2885c80-e064-11eb-88f9-99624f440ca8.png)
 
 
 ## Self-healing (Liveness Probe)
