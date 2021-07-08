@@ -697,97 +697,12 @@ siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/order
 ![image](https://user-images.githubusercontent.com/33124483/124907489-3144c600-e023-11eb-8370-edd1a799df70.png)
 
 
-- 동시사용자 2로 부하 생성 시 503 에러 168개 발생
+- 동시사용자 200로 부하 생성 시 에러 256개 발생
 ```
 siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1"}'
 ```
-
-** SIEGE 4.0.4
-** Preparing 2 concurrent users for battle.
-The server is now under siege...
-HTTP/1.1 201     0.02 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 503     0.10 secs:      81 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.04 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.05 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.22 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.08 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.07 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 503     0.01 secs:      81 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.03 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 503     0.01 secs:      81 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     258 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 503     0.00 secs:      81 bytes ==> POST http://room:8080/rooms
-
-Lifting the server siege...
-Transactions:                   1904 hits
-Availability:                  91.89 %
-Elapsed time:                   9.89 secs
-Data transferred:               0.48 MB
-Response time:                  0.01 secs
-Transaction rate:             192.52 trans/sec
-Throughput:                     0.05 MB/sec
-Concurrency:                    1.98
-Successful transactions:        1904
-Failed transactions:             168
-Longest transaction:            0.03
-Shortest transaction:           0.00
-```
-
-- kiali 화면에 서킷 브레이크 확인
-
-![Circuit Breaker(kiali)](https://user-images.githubusercontent.com/38099203/119298194-7f7e4f80-bc97-11eb-8447-678eece29e5c.PNG)
-
-
-- 다시 최소 Connection pool로 부하 다시 정상 확인
-
-```
-** SIEGE 4.0.4
-** Preparing 1 concurrent users for battle.
-The server is now under siege...
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.03 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.00 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.00 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.00 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.01 secs:     260 bytes ==> POST http://room:8080/rooms
-
-:
-:
-
-Lifting the server siege...
-Transactions:                   1139 hits
-Availability:                 100.00 %
-Elapsed time:                   9.19 secs
-Data transferred:               0.28 MB
-Response time:                  0.01 secs
-Transaction rate:             123.94 trans/sec
-Throughput:                     0.03 MB/sec
-Concurrency:                    0.98
-Successful transactions:        1139
-Failed transactions:               0
-Longest transaction:            0.04
-Shortest transaction:           0.00
-
-```
+![image](https://user-images.githubusercontent.com/33124483/124912998-93082e80-e029-11eb-9cbc-7dc8ed2c8a9d.png)
+![image](https://user-images.githubusercontent.com/33124483/124913126-b7fca180-e029-11eb-9351-7042192de6fb.png)
 
 - 운영시스템은 죽지 않고 지속적으로 CB 에 의하여 적절히 회로가 열림과 닫힘이 벌어지면서 자원을 보호하고 있음을 보여줌.
   virtualhost 설정과 동적 Scale out (replica의 자동적 추가,HPA) 을 통하여 시스템을 확장 해주는 후속처리가 필요.
