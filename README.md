@@ -757,6 +757,21 @@ kubectl get secrets
 
 ![image](https://user-images.githubusercontent.com/33124483/124958367-0c694680-e055-11eb-80a9-2cdaef379d10.png)
 
+- MySQL을 위한 Pod 생성을 위해 yaml 파일 생성 후 기동 및 Pod 활성화 확인
+
+![image](https://user-images.githubusercontent.com/33124483/124967472-6f5fdb00-e05f-11eb-8067-25b6b196000c.png)
+
+- MySQL Pod로 진입하여 작동 확인
+
+![image](https://user-images.githubusercontent.com/33124483/124967806-ce255480-e05f-11eb-9fb0-432bc3dfbc33.png)
+
+- k8s DNS 체계에서 접근가능하게 하기 위해 ClusterIP로 서비스 생성
+
+![image](https://user-images.githubusercontent.com/33124483/124968020-18a6d100-e060-11eb-89c5-ec84954ad700.png)
+
+- Pod가 오류로 종료되어버리면 데이터의 유실이 발생함. 이를 해결하기 위해 PersistenceVolume으로 된 파일시스템에 연결함
+- sql-secret.yaml 수정
+
 
 
 ## Self-healing (Liveness Probe)
