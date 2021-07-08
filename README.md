@@ -739,10 +739,12 @@ kubectl set image deploy order order=879772956301.dkr.ecr.eu-central-1.amazonaws
 ## Config Map/ Persistence Volume
 - Database 연결 및 Secret 설정은 재고인 cellphone 서비스에 설정함
 [shop > src > main > resource > application.yml]
+
 ![image](https://user-images.githubusercontent.com/33124483/124943877-d4a7d200-e047-11eb-979e-c65f1ddac25a.png)
 
 - Password는 Secret에서 비밀번호를 가져오도록 적용
 [shop > kubernetes > deployment.yml]
+
 ![image](https://user-images.githubusercontent.com/33124483/124944365-36683c00-e048-11eb-864e-ebe9021c344e.png)
 
 - secret객체를 설정하기 위한 yaml파일을 만들어서 설정
@@ -752,6 +754,9 @@ kubectl create -f sql-secret.yaml
 # secret 생성 확인
 kubectl get secrets
 ```
+
+![image](https://user-images.githubusercontent.com/33124483/124958367-0c694680-e055-11eb-80a9-2cdaef379d10.png)
+
 
 
 ## Self-healing (Liveness Probe)
