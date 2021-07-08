@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Date;
 
-@FeignClient(name="delivery", url="http://localhost:8083")
+//@FeignClient(name="delivery", url="http://localhost:8083")
+@FeignClient(name="order", url="${feign.client.url.orderUrl}")
 public interface DeliveryService {
     
     @RequestMapping(method= RequestMethod.GET, path="/startDelivery")
