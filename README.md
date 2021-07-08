@@ -691,13 +691,14 @@ siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/order
 
 - 명령어로 HPA 설정
 ```
-# CPU 사용량이 20%를 넘으면 replica를 3개까지 늘림
+# CPU 사용량이 20%를 넘으면 pod를 3개까지 늘림
 kubectl autoscale deployment order --cpu-percent=20 --min=1 --max=3
 ```
-![image](https://user-images.githubusercontent.com/33124483/124946889-58fb5480-e04a-11eb-81df-a33f1c19f326.png)
+![image](https://user-images.githubusercontent.com/33124483/124947531-df179b00-e04a-11eb-90af-d24d6bcba564.png)
 
 - 부하를 동시사용자 200명, 50초 동안 걸어준다.
-```siege -c200 -t50S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1","shopId":"1","eqpNm":"Iphone13","eqpStatus":"Order","eqpSernum":"1"}'
+```
+siege -c200 -t50S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1","shopId":"1","eqpNm":"Iphone13","eqpStatus":"Order","eqpSernum":"1"}'
 ```
 - 오토스케일이 어떻게 되고 있는지 모니터링을 걸어둔다
 ```
@@ -735,7 +736,7 @@ kubectl set image deploy order order=879772956301.dkr.ecr.eu-central-1.amazonaws
 ![image](https://user-images.githubusercontent.com/33124483/124942260-6ca4bc00-e046-11eb-933b-dd37d3ea191c.png)
 
 
-# Config Map/ Persistence Volume
+## Config Map/ Persistence Volume
 - Database 연결 및 Secret 설정은 재고인 cellphone 서비스에 설정함
 [shop > src > main > resource > application.yml]
 ![image](https://user-images.githubusercontent.com/33124483/124943877-d4a7d200-e047-11eb-979e-c65f1ddac25a.png)
@@ -754,19 +755,29 @@ kubectl get secrets
 
 
 ## Self-healing (Liveness Probe)
-- room deployment.yml 파일 수정 
-```
-콘테이너 실행 후 /tmp/healthy 파일을 만들고 
-90초 후 삭제
-livenessProbe에 'cat /tmp/healthy'으로 검증하도록 함
-```
-![deployment yml tmp healthy](https://user-images.githubusercontent.com/38099203/119318677-8ff0f300-bcb4-11eb-950a-e3c15feed325.PNG)
+1. yml 파일에 Liveness 적용
 
-- kubectl describe pod room -n airbnb 실행으로 확인
+![image](https://user-images.githubusercontent.com/33124483/124948362-93192600-e04b-11eb-8141-a13fd0037821.png)
+
+2. yml파일 apply적용 및 deploy에 적용확인
 ```
-컨테이너 실행 후 90초 동인은 정상이나 이후 /tmp/healthy 파일이 삭제되어 livenessProbe에서 실패를 리턴하게 됨
-pod 정상 상태 일때 pod 진입하여 /tmp/healthy 파일 생성해주면 정상 상태 유지됨
+# order > kubernetes 이동하여 Liveness yml파일에 있는 것 확인한 뒤 apply 진행
+kubectl apply -f deployment.yml
 ```
 
-![get pod tmp healthy](https://user-images.githubusercontent.com/38099203/119318781-a9923a80-bcb4-11eb-9783-65051ec0d6e8.PNG)
-![touch tmp healthy](https://user-images.githubusercontent.com/38099203/119319050-f118c680-bcb4-11eb-8bca-aa135c1e067e.PNG)
+![image](https://user-images.githubusercontent.com/33124483/124949065-35d1a480-e04c-11eb-8709-c1479aae6e9e.png)
+
+3. Pod가 에러로 종료가 될 때까지 siege로 계속해서 부하 발생
+```
+kubectl exec -it siege -- /bin/bash
+siege -c200 -t120S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1","shopId":"1","eqpNm":"Iphone13","eqpStatus":"Order","eqpSernum":"1"}'
+```
+4. Pod가 재기동이 발생을 하고, 정상화 확인
+
+![image](https://user-images.githubusercontent.com/33124483/124950386-53533e00-e04d-11eb-894e-f74b517ec155.png)
+
+
+5. kubectl get po -w로 모니터링하면서 RESTART로 재기동이 발생하는 모습 확인
+![image](https://user-images.githubusercontent.com/33124483/124950038-096a5800-e04d-11eb-951c-12e07136dee8.png)
+
+
