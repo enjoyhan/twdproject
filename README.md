@@ -690,80 +690,17 @@ hystrix:
         }
 ```
 
-
-* 서킷 브레이킹 프레임워크의 선택: istio 사용하여 구현함
-
-시나리오는 예약(reservation)--> 룸(room) 시의 연결을 RESTful Request/Response 로 연동하여 구현이 되어있고, 예약 요청이 과도할 경우 CB 를 통하여 장애격리.
-
-- DestinationRule 를 생성하여 circuit break 가 발생할 수 있도록 설정
-최소 connection pool 설정
-```
-# destination-rule.yml
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: dr-room
-  namespace: airbnb
-spec:
-  host: room
-  trafficPolicy:
-    connectionPool:
-      http:
-        http1MaxPendingRequests: 1
-        maxRequestsPerConnection: 1
-#    outlierDetection:
-#      interval: 1s
-#      consecutiveErrors: 1
-#      baseEjectionTime: 10s
-#      maxEjectionPercent: 100
-```
-
-* istio-injection 활성화 및 room pod container 확인
-
-```
-kubectl get ns -L istio-injection
-kubectl label namespace airbnb istio-injection=enabled 
-```
-
-![Circuit Breaker(istio-enjection)](https://user-images.githubusercontent.com/38099203/119295450-d6812600-bc91-11eb-8aad-46eeac968a41.PNG)
-
-![Circuit Breaker(pod)](https://user-images.githubusercontent.com/38099203/119295568-0cbea580-bc92-11eb-9d2b-8580f3576b47.PNG)
-
-
-* 부하테스터 siege 툴을 통한 서킷 브레이커 동작 확인:
-
-siege 실행
-
-```
-kubectl run siege --image=apexacme/siege-nginx -n airbnb
-kubectl exec -it siege -c siege -n airbnb -- /bin/bash
-```
-
-
 - 동시사용자 1로 부하 생성 시 모두 정상
 ```
-siege -c1 -t10S -v --content-type "application/json" 'http://room:8080/rooms POST {"desc": "Beautiful House3"}'
-
-** SIEGE 4.0.4
-** Preparing 1 concurrent users for battle.
-The server is now under siege...
-HTTP/1.1 201     0.49 secs:     254 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.05 secs:     254 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     254 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.03 secs:     254 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     254 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     254 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.03 secs:     254 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.03 secs:     254 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.03 secs:     254 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.03 secs:     256 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.03 secs:     256 bytes ==> POST http://room:8080/rooms
-HTTP/1.1 201     0.02 secs:     256 bytes ==> POST http://room:8080/rooms
+siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1"}'
 ```
+![image](https://user-images.githubusercontent.com/33124483/124907489-3144c600-e023-11eb-8370-edd1a799df70.png)
+
 
 - 동시사용자 2로 부하 생성 시 503 에러 168개 발생
 ```
-siege -c2 -t10S -v --content-type "application/json" 'http://room:8080/rooms POST {"desc": "Beautiful House3"}'
+siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1"}'
+```
 
 ** SIEGE 4.0.4
 ** Preparing 2 concurrent users for battle.
