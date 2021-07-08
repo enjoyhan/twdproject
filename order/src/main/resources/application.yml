@@ -70,3 +70,16 @@ spring:
         event-out:
           destination: twdproject
           contentType: application/json
+          
+feign:
+  client:
+    url:
+      orderUrl: http://order:8080
+      deliveryUrl: http://delivery:8080
+  hystrix:
+    enabled: true
+
+hystrix:
+  command:
+    default:
+      execution.isolation.thread.timeoutInMilliseconds: 610          
