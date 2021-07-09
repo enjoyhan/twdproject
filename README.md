@@ -640,7 +640,7 @@ codebuild 프로젝트 및 빌드 이력
 ![image](https://user-images.githubusercontent.com/33124483/124714171-67f3e100-df3c-11eb-8e16-841b76fb3484.png)
 ![image](https://user-images.githubusercontent.com/33124483/124719526-34b45080-df42-11eb-9a0d-27203db1c721.png)
 
-## 서킷 브레이킹
+## Circuit Breaker
 - Spring Spring FeignClient + Hystrix 옵션을 사용하여 테스팅 진행 주문(order) → 배송(delivery) 시 연결을 REST API로 Response/Request로 구현되거 있으며, 과도한 주문으로 배송에 문제가 될 때 서킷브레이커로 장애격리
 
 [order > src > main > resources > application.yml]
@@ -673,7 +673,7 @@ siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/order
 
 - 동시사용자 200로 부하 생성 시 에러 256개 발생
 ```
-siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1"}'
+siege -c200 -t50S -r5 -v --content-type "application/json" 'http://order:8080/orders POST {"orderId":"1"}'
 ```
 ![image](https://user-images.githubusercontent.com/33124483/124912998-93082e80-e029-11eb-9cbc-7dc8ed2c8a9d.png)
 ![image](https://user-images.githubusercontent.com/33124483/124913126-b7fca180-e029-11eb-9351-7042192de6fb.png)
@@ -682,7 +682,7 @@ siege -c1 -t1S -r5 -v --content-type "application/json" 'http://order:8080/order
   virtualhost 설정과 동적 Scale out (replica의 자동적 추가,HPA) 을 통하여 시스템을 확장 해주는 후속처리가 필요.
 
 
-### 오토스케일 아웃
+### Autoscale (HPA)
 앞서 CB 는 시스템을 안정되게 운영할 수 있게 해줬지만 사용자의 요청을 100% 받아들여주지 못했기 때문에 이에 대한 보완책으로 자동화된 확장 기능을 적용하고자 한다. 
 
 - order deployment.yml 파일에 resources 설정을 추가한다
@@ -710,7 +710,7 @@ kubectl get deploy order -w
 
 
 
-## 무정지 재배포
+## Zero-downtime deploy (readiness probe)
 
 1. Readiness를 주석처리하여 사전 테스트
 
@@ -806,4 +806,5 @@ siege -c200 -t120S -r5 -v --content-type "application/json" 'http://order:8080/o
 5. kubectl get po -w로 모니터링하면서 RESTART로 재기동이 발생하는 모습 확인
 ![image](https://user-images.githubusercontent.com/33124483/124950038-096a5800-e04d-11eb-951c-12e07136dee8.png)
 
+## Polyglot
 
