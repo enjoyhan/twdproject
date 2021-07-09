@@ -807,4 +807,16 @@ siege -c200 -t120S -r5 -v --content-type "application/json" 'http://order:8080/o
 ![image](https://user-images.githubusercontent.com/33124483/124950038-096a5800-e04d-11eb-951c-12e07136dee8.png)
 
 ## Polyglot
+1. RDS 생성
+![image](https://user-images.githubusercontent.com/33124483/125007013-5c1e3100-e09a-11eb-8894-6de494ed4e77.png)
+![image](https://user-images.githubusercontent.com/33124483/125007574-786e9d80-e09b-11eb-8b26-b9ff16253eee.png)
+
+2. 해당 RDS에 접근하기 위해 보안그룹의 인바운드 규칙을 확대해서 적용
+![image](https://user-images.githubusercontent.com/33124483/125010346-4d874800-e0a1-11eb-803d-9b8abc513a7c.png)
+
+3. RDS DB에 엔드포인트 확인
+![image](https://user-images.githubusercontent.com/33124483/125014481-c6d66900-e0a8-11eb-8431-0c6c54bf537a.png)
+
+4. mysql 설치~
+   --> 설치 및 셋팅이 잘 안되고 있음...
 
